@@ -22,11 +22,11 @@ namespace XmlToJsonTests
         }
 
         [Fact]
-        public void UploadFile_ShouldReturnOkResult_WhenFileIsNotNull()
+        public async Task UploadFile_ShouldReturnOkResult_WhenFileIsNotNull()
         {
             var mockFile = new Mock<IFormFile>();
             mockFile.Setup(f => f.Length).Returns(1);
-            var result = sut.UploadFile(mockFile.Object);
+            var result = await sut.UploadFile(mockFile.Object);
             Assert.IsType<OkObjectResult>(result);
         }
     }
