@@ -26,7 +26,8 @@ namespace XmlToJsonTests
         {
             var mockFile = new Mock<IFormFile>();
             mockFile.Setup(f => f.Length).Returns(1);
-            var result = await sut.UploadFile(mockFile.Object);
+            var list = new List<IFormFile>() { mockFile.Object };
+            var result = await sut.UploadFile(list);
             Assert.IsType<OkObjectResult>(result);
         }
     }

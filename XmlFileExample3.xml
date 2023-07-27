@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bookstore>
+    <book>
+        <title>Harry Potter and the Philosopher's Stone</title>
+        <author>J.K. Rowling</author>
+        <year>1997</year>
+        <price>19.99</price>
+    </book>
+    <book>
+        <title>The Lord of the Rings</title>
+        <author>J.R.R. Tolkien</author>
+        <year>1954</year>
+        <price>29.99</price>
+    </book>
+</bookstore>

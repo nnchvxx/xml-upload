@@ -20,39 +20,87 @@ namespace XmlToJsonConverter.Controllers
             this.logger = logger;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> UploadFile(IFormFile file)
+        [HttpGet("list")]
+        public IActionResult ListFiles()
         {
-            if (file == null || file.Length == 0)
-                return NotFound("File is empty.");
-
-            var fileId = Guid.NewGuid().ToString();
-            fileStatuses[fileId] = "Processing";
-
-            string content;
             try
             {
-                content = await utilService.ReadFile(file);
+                var filesNames = utilService.ListFiles();
+                return Ok(filesNames);
             }
             catch (Exception e)
             {
-                var logMsg = "Error reading file.";
                 logger.LogError(e.Message);
-                fileStatuses[fileId] = $"Error: {logMsg}";
-                return BadRequest(logMsg);
+                return BadRequest();
             }
-
-            ProcessFile(fileId, content, file.FileName);
-
-            return Ok(fileId);
         }
 
-        [HttpGet("{fileId}")]
-        public IActionResult GetStatus(string fileId)
+        [HttpGet("download/{fileName}")]
+        public async Task<IActionResult> DownloadFile(string fileName)
         {
-            if (fileStatuses.TryGetValue(fileId, out var status))
+            try
             {
-                return Ok(new { status });
+                var fileBytes = await utilService.GetFile(fileName);
+                return File(fileBytes, "application/json", fileName);
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e.Message);
+                return BadRequest();
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UploadFile([FromForm] List<IFormFile> files)
+        {
+            if (files == null || files.Count == 0)
+                return NotFound("File is empty.");
+
+            var newKeysOnly = new List<string>();
+
+            foreach (var file in files)
+            {
+                var fileId = Guid.NewGuid().ToString();
+                fileStatuses[fileId] = "Processing";
+                newKeysOnly.Add(fileId);
+
+                string content;
+                try
+                {
+                    content = await utilService.ReadFile(file);
+                }
+                catch (Exception e)
+                {
+                    var logMsg = "Error reading file.";
+                    logger.LogError(e.Message);
+                    fileStatuses[fileId] = $"Error: {logMsg}";
+                    return BadRequest(logMsg);
+                }
+
+                Task.Run(async () => await ProcessFile(fileId, content, file.FileName));
+            }
+            return Ok(newKeysOnly);
+        }
+
+        [HttpPost("status")]
+        public IActionResult GetStatus([FromBody] List<string> fileIds)
+        {
+            var result = new Dictionary<string, string>();
+            foreach (var fileId in fileIds)
+            {
+                if (fileStatuses.TryGetValue(fileId, out var status))
+                {
+                    result[fileId] = status;
+                }
+            }
+            if (result.Any())
+            {
+                var asd = result.Select(x => new
+                {
+                    fileId = x.Key,
+                    status = x.Value
+                });
+                return Ok(asd);
             }
             else
             {

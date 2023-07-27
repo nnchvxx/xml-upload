@@ -4,25 +4,62 @@ import { Form, Table } from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 
 const FileUpload = () => {
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [uploadStatus, setUploadStatus] = useState("");
   const [inputKey, setInputKey] = useState(Date.now());
   const [fileStatuses, setFileStatuses] = useState([]);
+  const [fileNames, setFileNames] = useState([]);
+
+  const listFileNames = () => {
+    axios
+      .get("https://localhost:7097/fileconvert/list")
+      .then((response) => {
+        var result = response.data;
+        setFileNames(result);
+      })
+      .catch((error) => {});
+  };
+
+  useEffect(() => {
+    listFileNames();
+  }, [fileStatuses]);
+
+  const handleFileDownload = async (fileName) => {
+    try {
+      const response = await axios.get(
+        `https://localhost:7097/fileconvert/download/${fileName}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+    } catch (error) {
+      console.error("Error downloading file:", error);
+    }
+  };
 
   const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
+    setFiles(event.target.files);
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    if (!file) {
+    if (!files.length) {
       setUploadStatus("Please select a file.");
       return;
     }
 
     const formData = new FormData();
-    formData.append("file", file);
+    Array.from(files).forEach((file) => {
+      formData.append("files", file);
+    });
 
     axios
       .post("https://localhost:7097/fileconvert", formData, {
@@ -33,7 +70,7 @@ const FileUpload = () => {
       .then((response) => {
         setFileStatuses((prevFileStatuses) => [
           ...prevFileStatuses,
-          { fileId: response.data, status: "Processing" },
+          ...response.data.map((fileId) => ({ fileId, status: "Processing" })),
         ]);
         setUploadStatus("");
         setInputKey(Date.now());
@@ -42,20 +79,28 @@ const FileUpload = () => {
         setUploadStatus(`Error uploading file: ${error.message}`);
       });
 
-    setFile(null);
+    setFiles([]);
   };
 
   useEffect(() => {
     const timer = setInterval(() => {
-      fileStatuses.forEach((fileStatus, index) => {
+      if (fileStatuses.length > 0) {
+        const fileIds = fileStatuses.map((fileStatus) => fileStatus.fileId);
+
         axios
-          .get(`https://localhost:7097/fileconvert/${fileStatus.fileId}`)
+          .post(`https://localhost:7097/fileconvert/status`, fileIds)
           .then((response) => {
-            const newFileStatuses = [...fileStatuses];
-            newFileStatuses[index].status = response.data.status;
+            const updatedStatuses = response.data;
+            const newFileStatuses = fileStatuses.map((fileStatus) => {
+              const updatedStatus = updatedStatuses.find(
+                (status) => status.fileId === fileStatus.fileId
+              );
+              return updatedStatus ? updatedStatus : fileStatus;
+            });
+
             setFileStatuses(newFileStatuses);
           });
-      });
+      }
     }, 5000);
 
     return () => {
@@ -90,6 +135,7 @@ const FileUpload = () => {
                 type="file"
                 onChange={handleFileChange}
                 key={inputKey}
+                multiple
               />
             </Form.Group>
             <Button type="submit" variant="primary" block className="mt-2">
@@ -113,6 +159,18 @@ const FileUpload = () => {
               </div>
             )}
           </Form>
+          <div>
+            {fileNames.map((fileName) => {
+              return (
+                <div>
+                  <button onClick={() => handleFileDownload(fileName)}>
+                    {fileName}
+                  </button>
+                  <br></br>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div

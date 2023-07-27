@@ -42,6 +42,8 @@ This project uses several libraries to implement its functionality and tests.
 1. Open your web browser and navigate to `http://localhost:3000`.
 2. Select an XML file to upload and click the "Upload" button.
 3. The converted JSON file will be saved in the `XmltoJsonConverter/SavedJsonFiles` directory.
+4. You can view a list of converted files by making a GET request to the /fileconvert/list endpoint.
+5. You can download a specific file by making a GET request to the /fileconvert/download/{fileName} endpoint, replacing {fileName} with the actual file name.
 
 ## Using Swagger UI
 
@@ -49,7 +51,8 @@ If you want to test the API without setting up the React client, you can use Swa
 
 1. Start the .NET API as described above.
 2. Open your web browser and navigate to `https://localhost:7097/swagger`.
-3. Use the Swagger UI to send a POST request to the `/fileconvert` endpoint. You'll need to select an XML file to upload as part of the request.
+3. Use the Swagger UI to send a POST request to the `/fileconvert` endpoint. You'll need to select an XML file to upload as part of the request(can select multiple files)
+4. Use the Swagger UI to send a GET request to the /fileconvert/download/{fileName} endpoint to download a specific file, replacing {fileName} with the actual file name.
 
 ## Running the tests
 
@@ -73,3 +76,10 @@ The status of a file can be one of the following:
 1. Processing: The file has been received and is currently being processed.
 2. Completed: The file has been successfully converted to JSON and saved to the XmltoJsonConverter/SavedJsonFiles directory.
 3. Error: {errorMessage}: An error occurred while processing the file. The error message provides more information about what went wrong. Possible errors include invalid XML format, file system errors, and server errors.
+
+## Listing and Downloading Files
+
+The application provides the ability to list all converted files and to download a specific file.
+
+1. To list all the converted files, make a GET request to the /fileconvert/list endpoint. The response will be a list of file names.
+2. To download a specific file, make a GET request to the /fileconvert/download/{fileName} endpoint, replacing {fileName} with the actual file name. The response will be the file itself.
